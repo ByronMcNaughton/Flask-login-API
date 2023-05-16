@@ -1,1 +1,2 @@
 DB_NAME = "database.db"
+SECRET_KEY ="ifgqwe9ogfTGW9YEPRH98YHSB8R9TPH"
