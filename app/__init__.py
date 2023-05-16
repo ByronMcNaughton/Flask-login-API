@@ -12,4 +12,9 @@ def create_app():
 
     app.register_blueprint(routes, url_prefix='/')
 
+    from .models import user
+
+    with app.app_context():
+        db.create_all()
+
     return app
