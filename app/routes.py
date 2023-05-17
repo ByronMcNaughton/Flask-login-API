@@ -93,8 +93,8 @@ def add_user():
     validate_username = validateUsername(username)
     validate_password = validatePassword(password)
 
-    if validate_username:
-        if validate_password:
+    if validate_username == True:
+        if validate_password == True:
             # add to db
             try:
                 new_user = User(username=username, password_hash=generate_password_hash(password, method='sha256'), is_verified=False)

@@ -9,7 +9,7 @@ def validateUsername(username):
                 'msg': 'Username must be 5 or more characters.'
             }), 422
     
-    if (' ' in username):
+    if (" " in username):
         return jsonify({
                 'msg': 'Username must not contain spaces.'
             }), 422
@@ -20,7 +20,7 @@ def validateUsername(username):
                 'msg': 'Internal error.'
             }), 500
     
-    if (user):
+    if (user is not None):
         return jsonify({
                 'msg': 'Username already exists.'
             }), 422
@@ -35,7 +35,7 @@ def validatePassword(password):
                 'msg': 'Password must contain one uppercase character.'
             }), 422
 
-    if (not any(x.lower() for x in password)):
+    if (not any(x.islower() for x in password)):
         return jsonify({
                 'msg': 'Password must contain one lowercase character.'
             }), 422
