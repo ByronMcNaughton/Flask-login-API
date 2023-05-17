@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 from . import db
 from .models import User
 from .validate import validateUsername, validatePassword
@@ -46,7 +47,6 @@ def login():
                 }), 401
         
         # if passwords dont match
-        ################################################## Need to sort out hash
         if not check_password_hash(user.password_hash, password):
             return jsonify({
                     'msg': 'Passwords do not match'
@@ -97,7 +97,7 @@ def add_user():
         if validate_password == True:
             # add to db
             try:
-                new_user = User(username=username, password_hash=generate_password_hash(password, method='sha256'), is_verified=False)
+                new_user = User(username=username, password_hash=generate_password_hash(password, method='sha256'), is_verified=True)
                 db.session.add(new_user)
                 db.session.commit()
                 return jsonify({
@@ -112,11 +112,33 @@ def add_user():
     else:
         return validate_username
     
+# @routes.route('/validate')
+# def protected():
+#     '''
+#     route to validate account
+#     Implement if needed
+#     '''
+#     pass
 
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token=request.json['token']
+
+        if not token:
+            return jsonify({'msg': 'Token is missing.'}), 403
+
+        try:
+            data=jwt.decode(token, config.SECRET_KEY)
+        except:
+            return jsonify({'msg': 'Token is invalid.'}), 403
+        
+        return f(*args, **kwargs)
 
 @routes.route('/protected')
+@token_required
 def protected():
     '''
     route only accessible with token
     '''
-    pass
+    return jsonify({'msg': 'Access Granted.'})
