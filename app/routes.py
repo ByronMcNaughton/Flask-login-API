@@ -1,3 +1,4 @@
+import json
 from flask import Blueprint, jsonify, request
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -146,17 +147,20 @@ def token_required(f):
 
 @routes.after_request
 def refresh_expiring_tokens(response):
+    
     try:
+        response = json.loads(response.data)
         token=response['token']
         data=jwt.decode(token, config.SECRET_KEY, algorithms=["HS256"])
         exp_timestamp = data["exp"]
+        exp_datetime = datetime.datetime.utcfromtimestamp(exp_timestamp)
         target_expiry = datetime.datetime.utcnow() + config.JWT_ACCESS_TOKEN_EXPIRES
-        if target_expiry > exp_timestamp:
+        if target_expiry > exp_datetime:
             token = generate_token(data['user'])
             response['token'] = token
-        return response
+        return jsonify(response)
     except:
-        # Case where there is an error. Just return the original response
+        # Case where there is an error or invalid token. Just return the original response
         return response
 
 @routes.route('/protected', methods=['POST'])
@@ -165,4 +169,5 @@ def protected():
     '''
     route only accessible with token
     '''
-    return jsonify({'msg': 'Access Granted.'}), 200
+    token=request.json['token']
+    return jsonify({'msg': 'Access Granted.', 'token': token}), 200
