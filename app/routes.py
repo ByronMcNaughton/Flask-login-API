@@ -10,6 +10,12 @@ import datetime
 
 routes = Blueprint('routes', __name__)
 
+def generate_token(username):
+    expiry = datetime.datetime.utcnow() + config.JWT_ACCESS_TOKEN_EXPIRES
+    token = jwt.encode({'user':username, 'exp':expiry}, config.SECRET_KEY)
+    return(token)
+
+
 @routes.route('/login', methods=['POST'])
 def login():
     '''
@@ -60,8 +66,7 @@ def login():
         
         # final confirmation and return token
         if user and check_password_hash(user.password_hash, password) and user.is_verified:
-            expiry = datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
-            token = jwt.encode({'user':user.username, 'exp':expiry}, config.SECRET_KEY)
+            token = generate_token(user.username)
             return jsonify({'Token':token}), 200
     
     return jsonify({
@@ -138,6 +143,21 @@ def token_required(f):
         
         return f(*args, **kwargs)
     return decorated
+
+@routes.after_request
+def refresh_expiring_tokens(response):
+    try:
+        token=response['token']
+        data=jwt.decode(token, config.SECRET_KEY, algorithms=["HS256"])
+        exp_timestamp = data["exp"]
+        target_expiry = datetime.datetime.utcnow() + config.JWT_ACCESS_TOKEN_EXPIRES
+        if target_expiry > exp_timestamp:
+            token = generate_token(data['user'])
+            response['token'] = token
+        return response
+    except:
+        # Case where there is an error. Just return the original response
+        return response
 
 @routes.route('/protected', methods=['POST'])
 @token_required
