@@ -123,22 +123,26 @@ def add_user():
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        token=request.json['token']
+        try:
+            token=request.json['token']
+        except:
+            return jsonify({'msg': 'Token is missing.'}), 403
 
         if not token:
             return jsonify({'msg': 'Token is missing.'}), 403
 
         try:
-            data=jwt.decode(token, config.SECRET_KEY)
-        except:
-            return jsonify({'msg': 'Token is invalid.'}), 403
+            data=jwt.decode(token, config.SECRET_KEY, algorithms=["HS256"])
+        except Exception as e:
+            return jsonify({'msg': e}), 403
         
         return f(*args, **kwargs)
+    return decorated
 
-@routes.route('/protected')
+@routes.route('/protected', methods=['POST'])
 @token_required
 def protected():
     '''
     route only accessible with token
     '''
-    return jsonify({'msg': 'Access Granted.'})
+    return jsonify({'msg': 'Access Granted.'}), 200
